@@ -1,1 +1,1 @@
-web: gunicorn amped.amped.wsgi
+web: gunicorn --pythonpath amped amped.wsgi
