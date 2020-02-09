@@ -19,3 +19,4 @@ venv/
 
 env_list.env
 secret.json
+amped/amped/conf.json
