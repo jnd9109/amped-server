@@ -1,1 +1,1 @@
-web: gunicorn amped.wsgi
+web: gunicorn amped.amped.wsgi
