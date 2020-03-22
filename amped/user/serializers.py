@@ -112,7 +112,6 @@ class UserSerializer(serializers.ModelSerializer):
     created_at = serializers.DateTimeField(read_only=True)
     updated_at = serializers.DateTimeField(read_only=True)
     group_ids = serializers.CharField(write_only=True)
-    groups = serializers.ListField(child=serializers.IntegerField(), read_only=True)
 
     class Meta:
         model = User
@@ -122,6 +121,7 @@ class UserSerializer(serializers.ModelSerializer):
                   'password', 'skill_ids', 'group_ids',
                   'groups'
                   )
+        read_only_fields = ('groups', )
 
     def get_profile_image(self, obj):
         if obj.profile_image:
