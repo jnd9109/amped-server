@@ -1,9 +1,11 @@
 from django.contrib.auth import authenticate, get_user_model
 from django.conf import settings
+from django.contrib.auth.models import Group
 from django.utils.translation import ugettext_lazy as _
 
 from rest_framework import serializers, exceptions, status
 
+from skill.models import Skill
 from skill.serializers import SkillSerializer
 from user.models import User
 
@@ -100,3 +102,68 @@ class LoginSerializer(serializers.Serializer):
 
         attrs['user'] = user
         return attrs
+
+
+class UserSerializer(serializers.ModelSerializer):
+    skills = SkillSerializer(many=True)
+    profile_image = serializers.SerializerMethodField()
+    password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+
+    class Meta:
+        model = User
+        fields = ('email', 'first_name', 'last_name', 'introduction', 'profession',
+                  'skills', 'profile_image', 'phone',
+                  'website', 'created_at', 'updated_at', 'groups',
+                  'password',
+                  )
+
+    def get_profile_image(self, obj):
+        if obj.profile_image:
+            return obj.profile_image.url
+
+    @staticmethod
+    def add_group(user, user_type):
+        group_name = {
+            1: 'offering',
+            2: 'seeking',
+        }[user_type]
+        group, _ = Group.objects.get_or_create(name=group_name)
+        user.groups.add(group)
+
+    def create(self, validated_data):
+        model_class = self.Meta.model
+        skills = validated_data.pop('skills')
+        group_ids = validated_data.pop('group_ids')
+
+        instance = model_class.objects.create_user(**validated_data)
+        if group_ids:
+            for gid in group_ids:
+                self.add_group(instance, gid)
+
+        if skills:
+            for s in skills:
+                try:
+                    instance.skills.add(Skill.objects.get(id=s.id))
+                    instance.skills.save()
+                except Exception as e:
+                    pass
+
+        return instance
+
+    def update(self, instance, validated_data):
+        model_class = self.Meta.model
+        skills = validated_data.pop('skills')
+        group_ids = validated_data.pop('group_ids')
+
+        super(UserSerializer, self).update(instance, validated_data)
+
+        if skills:
+            instance.skills.clear()
+            for s in skills:
+                try:
+                    instance.skills.add(Skill.objects.get(id=s.id))
+                    instance.skills.save()
+                except Exception as e:
+                    pass
+
+        return instance
