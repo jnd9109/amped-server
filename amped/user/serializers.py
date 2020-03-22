@@ -2,7 +2,10 @@ from django.contrib.auth import authenticate, get_user_model
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 
-from rest_framework import serializers, exceptions
+from rest_framework import serializers, exceptions, status
+
+from skill.serializers import SkillSerializer
+from user.models import User
 
 UserModel = get_user_model()
 
@@ -82,10 +85,10 @@ class LoginSerializer(serializers.Serializer):
         if user:
             if not user.is_active:
                 msg = _('User account is disabled.')
-                raise exceptions.ValidationError(msg)
+                raise exceptions.ValidationError(msg, code=status.HTTP_401_UNAUTHORIZED)
         else:
             msg = _('Unable to log in with provided credentials.')
-            raise exceptions.ValidationError(msg)
+            raise exceptions.ValidationError(msg, code=status.HTTP_401_UNAUTHORIZED)
 
         # If required, is the email verified?
         if 'rest_auth.registration' in settings.INSTALLED_APPS:
