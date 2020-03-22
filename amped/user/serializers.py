@@ -107,25 +107,23 @@ class LoginSerializer(serializers.Serializer):
 class UserSerializer(serializers.ModelSerializer):
     skills = SkillSerializer(many=True, read_only=True)
     skill_ids = serializers.CharField(write_only=True)
-    profile_image = serializers.SerializerMethodField()
-    password = serializers.CharField(write_only=True, style={'input_type': 'password'})
-    created_at = serializers.DateTimeField(read_only=True)
-    updated_at = serializers.DateTimeField(read_only=True)
+    # profile_image = serializers.SerializerMethodField()
+    password = serializers.CharField(write_only=True, style={'input_type': 'password'}, required=False)
     group_ids = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
-        fields = ('email', 'first_name', 'last_name', 'introduction', 'profession',
+        fields = ('id', 'email', 'first_name', 'last_name', 'introduction', 'profession',
                   'skills', 'profile_image', 'phone',
                   'website', 'created_at', 'updated_at',
                   'password', 'skill_ids', 'group_ids',
                   'groups'
                   )
-        read_only_fields = ('groups', )
+        read_only_fields = ('groups', 'created_at', 'updated_at')
 
-    def get_profile_image(self, obj):
-        if obj.profile_image:
-            return obj.profile_image.url
+    # def get_profile_image(self, obj):
+    #     if obj.profile_image:
+    #         return obj.profile_image.url
 
     @staticmethod
     def add_group(user, gid):
@@ -138,8 +136,8 @@ class UserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         model_class = self.Meta.model
-        skill_ids = validated_data.pop('skill_ids')
-        group_ids = validated_data.pop('group_ids')
+        skill_ids = validated_data.pop('skill_ids', None)
+        group_ids = validated_data.pop('group_ids', None)
 
         email = validated_data.pop('email')
         password = validated_data.pop('password')
@@ -151,34 +149,43 @@ class UserSerializer(serializers.ModelSerializer):
         instance.save()
 
         if group_ids:
-            for gid in group_ids:
-                self.add_group(instance, gid)
+            group_ids = group_ids.split(',')
+            if group_ids:
+                for gid in group_ids:
+                    self.add_group(instance, gid)
 
-        skill_ids = skill_ids.split(',')
         if skill_ids:
-            for sid in skill_ids:
-                try:
-                    instance.skills.add(Skill.objects.get(id=sid))
-                    instance.skills.save()
-                except Exception as e:
-                    pass
+            skill_ids = skill_ids.split(',')
+            if skill_ids:
+                for sid in skill_ids:
+                    try:
+                        instance.skills.add(Skill.objects.get(id=sid))
+                    except Exception as e:
+                        pass
 
         return instance
 
     def update(self, instance, validated_data):
-        model_class = self.Meta.model
-        skills = validated_data.pop('skills')
-        group_ids = validated_data.pop('group_ids')
+        skill_ids = validated_data.pop('skill_ids', None)
+        group_ids = validated_data.pop('group_ids', None)
 
         super(UserSerializer, self).update(instance, validated_data)
 
-        if skills:
-            instance.skills.clear()
-            for s in skills:
-                try:
-                    instance.skills.add(Skill.objects.get(id=s.id))
-                    instance.skills.save()
-                except Exception as e:
-                    pass
+        if skill_ids:
+            skill_ids = skill_ids.split(',')
+            if skill_ids:
+                instance.skills.clear()
+                for sid in skill_ids:
+                    try:
+                        instance.skills.add(Skill.objects.get(id=sid))
+                    except Exception as e:
+                        pass
+
+        if group_ids:
+            group_ids = group_ids.split(',')
+            if group_ids:
+                instance.groups.clear()
+                for gid in group_ids:
+                    self.add_group(instance, gid)
 
         return instance
