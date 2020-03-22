@@ -11,7 +11,7 @@ from user.models import User
 from user.serializers import UserSerializer, ProfileImageSerializer
 
 
-class UserViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
+class UserViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin, mixins.RetrieveModelMixin):
     serializer_class = UserSerializer
     queryset = User.objects.all()
 
@@ -25,6 +25,11 @@ class UserViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(status=status.HTTP_201_CREATED, data=serializer.data)
+
+    def retrieve(self, request, *args, **kwargs):
+        user = self.get_object()
+        serializer = self.get_serializer(user, context={'request': request})
+        return Response(data=serializer.data)
 
     @action(detail=False, methods=['GET'], url_name='user-retrieve', url_path='')
     def get(self, request, *args, **kwargs):
