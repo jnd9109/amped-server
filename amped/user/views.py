@@ -43,7 +43,7 @@ class UserViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
     @action(detail=False, methods=['PATCH'], url_name='user-path', url_path='')
     def patch(self, request, *args, **kwargs):
         user = request.user
-        serializer = self.get_serializer(user, data=request.data, context={'request': request})
+        serializer = self.get_serializer(user, data=request.data, context={'request': request}, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(data=serializer.data)
