@@ -21,8 +21,7 @@ class UserViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
         return (IsAuthenticated(), )
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer()
-        serializer(data=request.data, context={ 'request': request })
+        serializer = self.get_serializer(data=request.data, context={ 'request': request })
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(status=status.HTTP_201_CREATED, data=serializer.data)

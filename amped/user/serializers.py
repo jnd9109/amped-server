@@ -105,20 +105,22 @@ class LoginSerializer(serializers.Serializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    skills = SkillSerializer(many=True)
+    skills = SkillSerializer(many=True, read_only=True)
     skill_ids = serializers.CharField(write_only=True)
     profile_image = serializers.SerializerMethodField()
     password = serializers.CharField(write_only=True, style={'input_type': 'password'})
     created_at = serializers.DateTimeField(read_only=True)
     updated_at = serializers.DateTimeField(read_only=True)
     group_ids = serializers.CharField(write_only=True)
+    groups = serializers.ListField(child=serializers.IntegerField(), read_only=True)
 
     class Meta:
         model = User
         fields = ('email', 'first_name', 'last_name', 'introduction', 'profession',
                   'skills', 'profile_image', 'phone',
-                  'website', 'created_at', 'updated_at', 'groups',
+                  'website', 'created_at', 'updated_at',
                   'password', 'skill_ids', 'group_ids',
+                  'groups'
                   )
 
     def get_profile_image(self, obj):
@@ -126,11 +128,11 @@ class UserSerializer(serializers.ModelSerializer):
             return obj.profile_image.url
 
     @staticmethod
-    def add_group(user, user_type):
+    def add_group(user, gid):
         group_name = {
-            1: 'offering',
-            2: 'seeking',
-        }[user_type]
+            '1': 'offering',
+            '2': 'seeking',
+        }[gid]
         group, _ = Group.objects.get_or_create(name=group_name)
         user.groups.add(group)
 
@@ -139,7 +141,15 @@ class UserSerializer(serializers.ModelSerializer):
         skill_ids = validated_data.pop('skill_ids')
         group_ids = validated_data.pop('group_ids')
 
-        instance = model_class.objects.create_user(**validated_data)
+        email = validated_data.pop('email')
+        password = validated_data.pop('password')
+
+        instance = model_class.objects.create_user(email=email, password=password)
+
+        for (key, value) in validated_data.items():
+            setattr(instance, key, value)
+        instance.save()
+
         if group_ids:
             for gid in group_ids:
                 self.add_group(instance, gid)
