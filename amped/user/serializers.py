@@ -106,31 +106,26 @@ class LoginSerializer(serializers.Serializer):
 
 class UserSerializer(serializers.ModelSerializer):
     skills = SkillSerializer(many=True, read_only=True)
-    skill_ids = serializers.CharField(write_only=True)
-    # profile_image = serializers.SerializerMethodField()
+    skill_ids = serializers.ListField(child=serializers.IntegerField(), write_only=True)
     password = serializers.CharField(write_only=True, style={'input_type': 'password'}, required=False)
-    group_ids = serializers.CharField(write_only=True)
+    group_ids = serializers.ListField(child=serializers.IntegerField(), write_only=True)
 
     class Meta:
         model = User
         fields = ('id', 'email', 'first_name', 'last_name', 'introduction', 'profession',
-                  'skills', 'profile_image', 'phone',
+                  'skills', 'phone',
                   'website', 'created_at', 'updated_at',
                   'password', 'skill_ids', 'group_ids',
                   'groups'
                   )
-        read_only_fields = ('groups', 'created_at', 'updated_at')
-
-    # def get_profile_image(self, obj):
-    #     if obj.profile_image:
-    #         return obj.profile_image.url
+        read_only_fields = ('groups', 'created_at', 'updated_at', 'profile_image')
 
     @staticmethod
     def add_group(user, gid):
         group_name = {
             '1': 'offering',
             '2': 'seeking',
-        }[gid]
+        }[str(gid)]
         group, _ = Group.objects.get_or_create(name=group_name)
         user.groups.add(group)
 
@@ -149,19 +144,15 @@ class UserSerializer(serializers.ModelSerializer):
         instance.save()
 
         if group_ids:
-            group_ids = group_ids.split(',')
-            if group_ids:
-                for gid in group_ids:
-                    self.add_group(instance, gid)
+            for gid in group_ids:
+                self.add_group(instance, gid)
 
         if skill_ids:
-            skill_ids = skill_ids.split(',')
-            if skill_ids:
-                for sid in skill_ids:
-                    try:
-                        instance.skills.add(Skill.objects.get(id=sid))
-                    except Exception as e:
-                        pass
+            for sid in skill_ids:
+                try:
+                    instance.skills.add(Skill.objects.get(id=sid))
+                except Exception as e:
+                    pass
 
         return instance
 
@@ -172,20 +163,29 @@ class UserSerializer(serializers.ModelSerializer):
         super(UserSerializer, self).update(instance, validated_data)
 
         if skill_ids:
-            skill_ids = skill_ids.split(',')
-            if skill_ids:
-                instance.skills.clear()
-                for sid in skill_ids:
-                    try:
-                        instance.skills.add(Skill.objects.get(id=sid))
-                    except Exception as e:
-                        pass
+            instance.skills.clear()
+            for sid in skill_ids:
+                try:
+                    instance.skills.add(Skill.objects.get(id=sid))
+                except Exception as e:
+                    pass
 
         if group_ids:
-            group_ids = group_ids.split(',')
-            if group_ids:
-                instance.groups.clear()
-                for gid in group_ids:
-                    self.add_group(instance, gid)
+            instance.groups.clear()
+            for gid in group_ids:
+                self.add_group(instance, gid)
 
+        return instance
+
+
+class ProfileImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('profile_image', )
+
+    def create(self, validated_data):
+        raise NotImplementedError
+
+    def update(self, instance, validated_data):
+        super(ProfileImageSerializer, self).update(instance, validated_data)
         return instance
