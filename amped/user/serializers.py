@@ -106,15 +106,19 @@ class LoginSerializer(serializers.Serializer):
 
 class UserSerializer(serializers.ModelSerializer):
     skills = SkillSerializer(many=True)
+    skill_ids = serializers.CharField(write_only=True)
     profile_image = serializers.SerializerMethodField()
     password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+    created_at = serializers.DateTimeField(read_only=True)
+    updated_at = serializers.DateTimeField(read_only=True)
+    group_ids = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
         fields = ('email', 'first_name', 'last_name', 'introduction', 'profession',
                   'skills', 'profile_image', 'phone',
                   'website', 'created_at', 'updated_at', 'groups',
-                  'password',
+                  'password', 'skill_ids', 'group_ids',
                   )
 
     def get_profile_image(self, obj):
@@ -132,7 +136,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         model_class = self.Meta.model
-        skills = validated_data.pop('skills')
+        skill_ids = validated_data.pop('skill_ids')
         group_ids = validated_data.pop('group_ids')
 
         instance = model_class.objects.create_user(**validated_data)
@@ -140,10 +144,11 @@ class UserSerializer(serializers.ModelSerializer):
             for gid in group_ids:
                 self.add_group(instance, gid)
 
-        if skills:
-            for s in skills:
+        skill_ids = skill_ids.split(',')
+        if skill_ids:
+            for sid in skill_ids:
                 try:
-                    instance.skills.add(Skill.objects.get(id=s.id))
+                    instance.skills.add(Skill.objects.get(id=sid))
                     instance.skills.save()
                 except Exception as e:
                     pass
