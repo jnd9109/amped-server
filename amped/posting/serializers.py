@@ -20,7 +20,7 @@ class PostingSerializer(ModelSerializer):
     author = UserSerializer(read_only=True)
     author_id = serializers.IntegerField(default=CurrentUserIdDefault(), write_only=True)
     required_skills = SkillSerializer(many=True, read_only=True)
-    required_skill_ids = serializers.CharField(write_only=True)
+    required_skill_ids = serializers.ListField(child=serializers.IntegerField(), write_only=True)
 
     class Meta:
         model = Posting
@@ -32,13 +32,11 @@ class PostingSerializer(ModelSerializer):
         instance = super(PostingSerializer, self).create(validated_data)
 
         if required_skill_ids:
-            required_skill_ids = required_skill_ids.split(',')
-            if required_skill_ids:
-                for sid in required_skill_ids:
-                    try:
-                        instance.required_skills.add(Skill.objects.get(id=sid))
-                    except:
-                        pass
+            for sid in required_skill_ids:
+                try:
+                    instance.required_skills.add(Skill.objects.get(id=sid))
+                except:
+                    pass
 
         return instance
 
@@ -48,13 +46,11 @@ class PostingSerializer(ModelSerializer):
         super(PostingSerializer, self).update(instance, validated_data)
 
         if required_skill_ids:
-            required_skill_ids = required_skill_ids.split(',')
-            if required_skill_ids:
-                instance.required_skills.clear()
-                for sid in required_skill_ids:
-                    try:
-                        instance.required_skills.add(Skill.objects.get(id=sid))
-                    except:
-                        pass
+            instance.required_skills.clear()
+            for sid in required_skill_ids:
+                try:
+                    instance.required_skills.add(Skill.objects.get(id=sid))
+                except:
+                    pass
 
         return instance

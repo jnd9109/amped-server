@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from user.models import User
-from user.serializers import UserSerializer
+from user.serializers import UserSerializer, ProfileImageSerializer
 
 
 class UserViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
@@ -21,7 +21,7 @@ class UserViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
         return (IsAuthenticated(), )
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data, context={ 'request': request })
+        serializer = self.get_serializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(status=status.HTTP_201_CREATED, data=serializer.data)
@@ -46,4 +46,11 @@ class UserViewSet(viewsets.GenericViewSet, mixins.CreateModelMixin):
         serializer = self.get_serializer(user, data=request.data, context={'request': request}, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        return Response(data=serializer.data)
+
+    @action(detail=False, methods=['PUT'], url_name='user-profile-image', url_path='upload-profile-image')
+    def upload_profile_image(self, request):
+        user = request.user
+        serializer = ProfileImageSerializer(user, data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
         return Response(data=serializer.data)
