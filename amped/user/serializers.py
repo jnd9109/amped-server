@@ -160,7 +160,6 @@ class UserSerializer(serializers.ModelSerializer):
                 for sid in skill_ids:
                     try:
                         instance.skills.add(Skill.objects.get(id=sid))
-                        instance.skills.save()
                     except Exception as e:
                         pass
 
@@ -179,7 +178,6 @@ class UserSerializer(serializers.ModelSerializer):
                 for sid in skill_ids:
                     try:
                         instance.skills.add(Skill.objects.get(id=sid))
-                        instance.skills.save()
                     except Exception as e:
                         pass
 
