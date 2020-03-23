@@ -122,11 +122,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def add_group(user, gid):
-        group_name = {
-            '1': 'offering',
-            '2': 'seeking',
-        }[str(gid)]
-        group, _ = Group.objects.get_or_create(name=group_name)
+        group = Group.objects.get(id=gid)
         user.groups.add(group)
 
     def create(self, validated_data):
